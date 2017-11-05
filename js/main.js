@@ -194,7 +194,6 @@ function upload() {
     var fileName = document.getElementById('entryName').value + '.webm'; // or "wav"
     var formData = new FormData();
     formData.append(fileType + '-filename', fileName);
-    formData.append('fileData', blob);
     formData.append('uploadToken:objectType', 'KalturaUploadToken');
     formData.append('uploadToken:fileName',encodeURIComponent(fileName));
     formData.append('ks', ks);
