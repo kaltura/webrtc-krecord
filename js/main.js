@@ -26,6 +26,7 @@ var recordButton = document.querySelector('button#record');
 var playButton = document.querySelector('button#play');
 var downloadButton = document.querySelector('button#download');
 var uploadButton = document.querySelector('button#upload');
+var uploadToken = null;
 recordButton.onclick = toggleRecording;
 playButton.onclick = play;
 downloadButton.onclick = download;
@@ -34,11 +35,11 @@ uploadButton.onclick = upload;
 // window.isSecureContext could be used for Chrome
 var isSecureOrigin = location.protocol === 'https:' ||
 location.hostname === 'localhost';
-if (!isSecureOrigin) {
+/*if (!isSecureOrigin) {
   alert('getUserMedia() must be run from a secure origin: HTTPS or localhost.' +
     '\n\nChanging protocol to HTTPS');
   location.protocol = 'HTTPS';
-}
+}*/
 
 var constraints = {
   audio: true,
@@ -161,12 +162,12 @@ function genKS(server,userId, password, partnerId)
 {
     var params;
     if (partnerId){
-	params="loginId="+encodeURIComponent(userId)+"&password="+encodeURIComponent(password)+"&partnerId="+encodeURIComponent(partnerId);
+	params="format=1&loginId="+encodeURIComponent(userId)+"&password="+encodeURIComponent(password)+"&partnerId="+encodeURIComponent(partnerId);
     }else{
-	params="loginId="+encodeURIComponent(userId)+"&password="+encodeURIComponent(password);
+	params="format=1&loginId="+encodeURIComponent(userId)+"&password="+encodeURIComponent(password);
     }
-    kDoJSONRequest(server, null, "/service/user/action/loginByLoginId", 
-	params, function(ks) {
+    kDoJSONApiRequest(server+"/service/user/action/loginByLoginId?"+params, 
+	null, function(ks) {
 	    if (!ks){
 		console.log('error generating KS');
 		return false;
@@ -174,48 +175,54 @@ function genKS(server,userId, password, partnerId)
 	document.getElementById("inputKS").value=ks;
     });
 }    
-function kDoJSONRequest(server, ks, path, queryString, callback) {
-    
-    if (ks){
-	var url = server + path + "?format=1&ks=" + ks + "&" + queryString;
-    }else{
-	var url = server + path + "?format=1&" + queryString;
-    }
+function kDoJSONApiRequest(endpoint, data, callback) {
     
     var xhr = new XMLHttpRequest();
-    xhr.open("POST", url, true);
+    xhr.open("POST", endpoint, true);
     xhr.responseType = "json";
     xhr.onload = function(event) {
 	callback(event.target.response);
     };
-    xhr.send();
-}
-
-
-function xhr(url, data, callback) {
-    var request = new XMLHttpRequest();
-    request.onreadystatechange = function () {
-        if (request.readyState == 4 && request.status == 200) {
-            callback(location.href + request.responseText);
-        }
-    };
-    request.open('POST', url);
-    request.send(data);
+    xhr.send(data);
 }
 
 function upload() {
   var blob = new Blob(recordedBlobs, {type: 'video/webm'});
+    var kaltEndpoint = document.getElementById("serviceUrl").value + '/api_v3/';
+    var ks=document.getElementById("inputKS").value;
     var fileType = 'video'; // or "audio"
     var fileName = document.getElementById('entryName').value + '.webm'; // or "wav"
-
     var formData = new FormData();
     formData.append(fileType + '-filename', fileName);
-    formData.append(fileType + '-blob', blob);
-    formData.append('ks', document.getElementById("inputKS").value);
-    formData.append('serviceUrl', document.getElementById("serviceUrl").value);
+    formData.append('fileData', blob);
+    formData.append('uploadToken:objectType', 'KalturaUploadToken');
+    formData.append('uploadToken:fileName',encodeURIComponent(fileName));
+    formData.append('ks', ks);
+    formData.append('format', 1);
+    kDoJSONApiRequest(kaltEndpoint+'/service/uploadToken/action/add',formData, 
+                function (myuploadToken) {
+		uploadToken=myuploadToken.id;
+    		formData = new FormData();
+	    	formData.append('fileData', blob);
+	    	formData.append('uploadTokenId', uploadToken);
+	    	formData.append('resume',false);
+	    	formData.append('resumeAt',false);
+	    	formData.append('finalChunk',true);
+	    	formData.append('ks', ks);
+		formData.append('format', 1);
+			kDoJSONApiRequest(kaltEndpoint+'/service/uploadToken/action/upload', formData,
+				function (response) {
+					kDoJSONApiRequest(kaltEndpoint+'/service/media/action/addFromUploadedFile?'+ 
+						"ks=" + ks +
+						"&format=1" +
+						"&mediaEntry:name="+fileName +
+						"&mediaEntry:mediaType=1" +
+						"&uploadTokenId="+uploadToken, null
+						,function (response) {
+							console.log("addFromUploadedFile:");
+							console.log(response);
+					});
+			});
+	});
 
-    xhr('upload_to_kaltura.php', formData, function (fileURL) {
-	//window.open(fileURL);
-	alert("Successfully uploaded file to "+document.getElementById("serviceUrl").value);
-    });
 }
