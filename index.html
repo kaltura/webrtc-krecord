@@ -1,41 +1,60 @@
-<!DOCTYPE html>
-<!--
- *  Copyright (c) 2015 The WebRTC project authors. All Rights Reserved.
- *
- *  Use of this source code is governed by a BSD-style license
- *  that can be found in the LICENSE file in the root of the source
- *  tree.
+﻿<!--
+> This demo is based on an example by Muaz Khan [www.MuazKhan.com] and his github.com/muaz-khan/Ffmpeg.js repo.
+> We call ffmpeg with -i video.webm -c copy output.webm so that the BR and duration are correctly set in output.webm's headers
+> MIT License   - www.WebRTC-Experiment.com/licence
+> Documentation - github.com/muaz-khan/Ffmpeg.js
 -->
-<html>
-<head>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>RecordRTC and Ffmpeg.js - Kaltura Test</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-  <meta charset="utf-8">
-  <meta name="description" content="WebRTC code samples">
-  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
-  <meta itemprop="description" content="Client-side WebRTC code samples">
-  <meta itemprop="name" content="Kaltura WebRTC">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta id="theme-color" name="theme-color" content="#ffffff">
+	 <link rel="stylesheet" href="css/mystyle.css">
 
-  <base target="_blank">
+        <style>
+            video {
+                vertical-align: bottom;
+                width: 600px;
+            }
 
-  <title>MediaStream Recording</title>
+            input {
+                border: 1px solid #d9d9d9;
+                border-radius: 1px;
+            }
 
-  <link rel="icon" sizes="192x192" href="../../../images/webrtc-icon-192x192.png">
-  <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
-  <link rel="stylesheet" href="css/main.css">
-  <link rel="stylesheet" href="css/gmain.css">
-  <link rel="stylesheet" type="text/css" href="css/style.css" />
+            p, .inner { padding: 1em; }
 
-</head>
+            li {
+                border-bottom: 1px solid rgb(189, 189, 189);
+                border-left: 1px solid rgb(189, 189, 189);
+                padding: .5em;
+            }
 
-<body>
+            label {
+                display: inline-block;
+                width: 8em;
+            }
+        </style>
+        <script>
+            document.createElement('article');
+            document.createElement('footer');
+        </script>
 
-  <div class="content" id="container">
+        <!-- script used for audio/video/gif recording -->
+        <script src="https://cdn.webrtc-experiment.com/RecordRTC.js"> </script>
+    </head>
 
-    <h1><a href="//webrtc.github.io/samples/" title="WebRTC samples homepage">WebRTC samples</a> <span>MediaRecorder</span></h1>
+    <body>
+        <article>
 
-    <p>This demo requires Firefox 29 or later, or Chrome 47 or later with <strong>Enable experimental Web Platform features</strong> enabled from chrome://flags.</p>
+
+
+            <section class="experiment">
+                <h1 class="header">Record Video and upload to Kaltura</h1>
 
       <fieldset>
 	  <div class="row">
@@ -53,12 +72,14 @@
 	    <input  id="mypassword" type="password" size="30">
 	  </div>
 	  <div class="form-group valid-row">
-	    <label for="partnerId">Partner ID (optional):</label>
+	    <label for="partnerId">Partner ID:</label>
 	    <input id="partnerId" type="text" size="30">
 	  </div>
+<br>
 	  <div class="form-group valid-row">
 	    <input id="gen_ks" type="button" value="Generate KS" onclick="genKS(document.getElementById('serviceUrl').value+'/api_v3',document.getElementById('userId').value,document.getElementById('mypassword').value,document.getElementById('partnerId').value)"> </td></tr> 
 	  </div>
+<br>
 	  <div class="form-group valid-row">
 	    <textarea cols="100" id="inputKS" placeholder="Input a valid Kaltura Session or input creds above to generate one"></textarea>
 	  </div>
@@ -68,26 +89,238 @@
 	  </div>
 	  </div>
 	  </div>
+<hr>
       <fieldset>
+                <div class="inner">
+                    <button id="record-video">Record</button>
+                    <button id="stop-recording-video" disabled>Stop</button>
+                    <br>
+                    <video id="video-preview" autoplay></video>
+                    <br>
+                </div>
+            </section>
+            <section class="experiment">
+                <h2 class="header">Logs</h2>
+                <ol id="logs-preview">
+                    <li>
+                        <a href="https://www.webrtc-experiment.com/RecordRTC/">RecordRTC</a> experiment
+                    </li>
+                </ol>
+            </section>
+            <script>
+                var recordVideo;
+                var videoPreview = document.getElementById('video-preview');
+                var inner = document.querySelector('.inner');
 
-    <p>Cam Live</p>
-    <video id="gum" autoplay muted></video>
-    <p>Recorded Stream</p>
-    <video id="recorded" autoplay loop></video>
+                document.querySelector('#record-video').onclick = function() {
+                    this.disabled = true;
+                    navigator.getUserMedia({
+                            video: true
+                        }, function(stream) {
+                            videoPreview.src = window.URL.createObjectURL(stream);
+                            videoPreview.play();
 
-    <div>
-      <button id="record" disabled>Start Recording</button>
-      <button id="play" disabled>Play Last Recording</button>
-      <button id="download" disabled>Download Rec</button>
-      <button id="upload" disabled>Upload to Kaltura</button>
-    </div>
+                            recordVideo = RecordRTC(stream, {
+                                type: 'video'
+                            });
 
-</div>
+                            recordVideo.startRecording();
+                        }, function(error) { throw error;});
+                    document.querySelector('#stop-recording-video').disabled = false;
+                };
 
+                document.querySelector('#stop-recording-video').onclick = function() {
+                    this.disabled = true;
 
-  <!-- include adapter for srcObject shim -->
-  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
-  <script src="js/main.js"></script>
+                    recordVideo.stopRecording(function(url) {
+                        videoPreview.src = url;
+                        videoPreview.download = 'video.webm';
 
-</body>
+                        log('<a href="'+ workerPath +'" download="js/ffmpeg-asm.js">ffmpeg-asm.js</a> Operations started... please be patient!');
+                        convertStreams(recordVideo.getBlob());
+                    });
+                };
+
+                var workerPath = 'https://archive.org/download/ffmpeg_asm/ffmpeg_asm.js';
+                if(document.domain == 'localhost') {
+                    workerPath = location.href.replace(location.href.split('/').pop(), '') + 'js/ffmpeg_asm.js';
+                }
+
+		function genKS(server,userId, password, partnerId)
+		{
+		    var params;
+		    if (partnerId){
+			params="format=1&loginId="+encodeURIComponent(userId)+"&password="+encodeURIComponent(password)+"&partnerId="+encodeURIComponent(partnerId);
+		    }else{
+			params="format=1&loginId="+encodeURIComponent(userId)+"&password="+encodeURIComponent(password);
+		    }
+		    kDoJSONApiRequest(server+"/service/user/action/loginByLoginId?"+params, 
+			null, function(ks) {
+			    if (!ks){
+				console.log('error generating KS');
+				return false;
+			    }
+			document.getElementById("inputKS").value=ks;
+		    });
+		}    
+		function kDoJSONApiRequest(endpoint, data, callback) {
+		    
+		    var xhr = new XMLHttpRequest();
+		    xhr.open("POST", endpoint, true);
+		    xhr.responseType = "json";
+		    xhr.onload = function(event) {
+			callback(event.target.response);
+		    };
+		    xhr.send(data);
+		}
+                function processInWebWorker() {
+                    var blob = URL.createObjectURL(new Blob(['importScripts("' + workerPath + '");var now = Date.now;function print(text) {postMessage({"type" : "stdout","data" : text});};onmessage = function(event) {var message = event.data;if (message.type === "command") {var Module = {print: print,printErr: print,files: message.files || [],arguments: message.arguments || [],TOTAL_MEMORY: message.TOTAL_MEMORY || false};postMessage({"type" : "start","data" : Module.arguments.join(" ")});postMessage({"type" : "stdout","data" : "Received command: " +Module.arguments.join(" ") +((Module.TOTAL_MEMORY) ? ".  Processing with " + Module.TOTAL_MEMORY + " bits." : "")});var time = now();var result = ffmpeg_run(Module);var totalTime = now() - time;postMessage({"type" : "stdout","data" : "Finished processing (took " + totalTime + "ms)"});postMessage({"type" : "done","data" : result,"time" : totalTime});}};postMessage({"type" : "ready"});'], {
+                        type: 'application/javascript'
+                    }));
+
+                    var worker = new Worker(blob);
+                    URL.revokeObjectURL(blob);
+                    return worker;
+                }
+
+                var worker;
+
+                function convertStreams(videoBlob) {
+                    var aab;
+                    var buffersReady;
+                    var workerReady;
+                    var posted;
+
+                    var fileReader = new FileReader();
+                    fileReader.onload = function() {
+                        aab = this.result;
+                        postMessage();
+                    };
+                    fileReader.readAsArrayBuffer(videoBlob);
+
+                    if (!worker) {
+                        worker = processInWebWorker();
+                    }
+
+                    worker.onmessage = function(event) {
+                        var message = event.data;
+                        if (message.type == "ready") {
+                            log('<a href="'+ workerPath +'" download="ffmpeg-asm.js">ffmpeg-asm.js</a> file has been loaded.');
+
+                            workerReady = true;
+                            if (buffersReady)
+                                postMessage();
+                        } else if (message.type == "stdout") {
+                            log(message.data);
+                        } else if (message.type == "start") {
+                            log('<a href="'+ workerPath +'" download="ffmpeg-asm.js">ffmpeg-asm.js</a> file received ffmpeg command.');
+                        } else if (message.type == "done") {
+                            log(JSON.stringify(message));
+
+                            var result = message.data[0];
+                            log(JSON.stringify(result));
+
+                            var blob = new File([result.data], 'test.mp4', {
+                                type: 'video/mp4'
+                            });
+
+                            log(JSON.stringify(blob));
+
+                            PostBlob(blob);
+                        }
+                    };
+                    var postMessage = function() {
+                        posted = true;
+
+                        worker.postMessage({
+                            type: 'command',
+                            arguments: '-i video.webm -c copy output.webm'.split(' '),
+                            files: [
+                                {
+                                    data: new Uint8Array(aab),
+                                    name: 'video.webm'
+                                }
+                            ]
+                        });
+                    };
+                }
+
+                function PostBlob(blob) {
+		    var kaltEndpoint = document.getElementById("serviceUrl").value + '/api_v3/';
+		    var ks=document.getElementById("inputKS").value;
+		    var fileType = 'video'; // or "audio"
+		    var fileName = document.getElementById('entryName').value + '.webm'; // or "wav"
+		    var formData = new FormData();
+		    formData.append(fileType + '-filename', fileName);
+		    formData.append('uploadToken:objectType', 'KalturaUploadToken');
+		    formData.append('uploadToken:fileName',encodeURIComponent(fileName));
+		    formData.append('ks', ks);
+		    formData.append('format', 1);
+		    kDoJSONApiRequest(kaltEndpoint+'/service/uploadToken/action/add',formData, 
+				function (myuploadToken) {
+				uploadToken=myuploadToken.id;
+				formData = new FormData();
+				formData.append('fileData', blob);
+				formData.append('uploadTokenId', uploadToken);
+				formData.append('resume',false);
+				formData.append('resumeAt',false);
+				formData.append('finalChunk',true);
+				formData.append('ks', ks);
+				formData.append('format', 1);
+					kDoJSONApiRequest(kaltEndpoint+'/service/uploadToken/action/upload', formData,
+						function (response) {
+							kDoJSONApiRequest(kaltEndpoint+'/service/media/action/addFromUploadedFile?'+ 
+								"ks=" + ks +
+								"&format=1" +
+								"&mediaEntry:name="+fileName +
+								"&mediaEntry:mediaType=1" +
+								"&uploadTokenId="+uploadToken, null
+								,function (response) {
+									console.log("addFromUploadedFile:");
+									console.log(response);
+							});
+					});
+			});
+
+                    var video = document.createElement('video');
+                    video.controls = true;
+
+                    var source = document.createElement('source');
+                    source.src = URL.createObjectURL(blob);
+                    source.type = 'video/webm; codecs=vp8';
+                    video.appendChild(source);
+
+                    video.download = 'play.mp4';
+
+                    inner.appendChild(document.createElement('hr'));
+                    var h3 = document.createElement('h3');
+                    h3.innerHTML = '<a href="' + source.src + '" target="_blank" download="play.mp4" style="font-size:200%;color:blue;">Download Recording</a>';
+                    inner.appendChild(h3);
+                    h3.style.display = 'block';
+                    inner.appendChild(video);
+
+                    video.tabIndex = 0;
+                    video.focus();
+                    video.play();
+
+                    document.querySelector('#record-video').disabled = false;
+                }
+
+                var logsPreview = document.getElementById('logs-preview');
+
+                function log(message) {
+                    var li = document.createElement('li');
+                    li.innerHTML = message;
+                    logsPreview.appendChild(li);
+
+                    li.tabIndex = 0;
+                    li.focus();
+                }
+
+                window.onbeforeunload = function() {
+                    document.querySelector('#record-video').disabled = false;
+                };
+            </script>
+
+    </body>
 </html>
