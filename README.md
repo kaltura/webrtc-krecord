@@ -1,5 +1,5 @@
 # webRTC based krecord
-Record from webcam, use ffmpeg.js to set the metadata about duration and BR and ingest onto a Kaltura Server.
+Record from webcam, use ffmpeg.js to set the metadata about duration and ingest onto a Kaltura Server.
 
 This demo is based on an example by Muaz Khan [www.MuazKhan.com] and his github.com/muaz-khan/Ffmpeg.js repo.
 
